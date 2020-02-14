@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jun 13 14:25:53 2019
+
+@author: mlees
+"""
+
+import sys
+sys.path.append("/Users/mlees/Documents/RESEARCH/InSAR_processing/postprocessing_scripts/")
+from postprocessing import *
+
+directory="~/drummer15/data1/mlees/CentralValleyProject1/Subsidence_Phase/interferograms"
+
+data_imported = InSAR_data(directory)

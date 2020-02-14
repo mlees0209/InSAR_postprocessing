@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.1">
+<Document>
+	<name>topo_gmt</name>
+	<GroundOverlay>
+		<name>GMT Image Overlay</name>
+		<Icon>
+			<href>topo_gmt.png</href>
+		</Icon>
+		<altitudeMode>clampToGround</altitudeMode>
+		<LatLonBox>
+			<north>37.000000</north>
+			<south>35.000000</south>
+			<east>-118.000000</east>
+			<west>-120.000000</west>
+		</LatLonBox>
+		<Region>
+		<LatLonAltBox>
+			<north>37.000000</north>
+			<south>35.000000</south>
+			<east>-118.000000</east>
+			<west>-120.000000</west>
+		</LatLonAltBox>
+		<Lod>
+			<minLodPixels>256</minLodPixels>
+			<maxLodPixels>-1</maxLodPixels>
+		</Lod>
+		</Region>
+	</GroundOverlay>
+</Document>
+</kml>

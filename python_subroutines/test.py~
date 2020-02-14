@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jun 10 16:15:50 2019
+
+@author: mlees
+"""
+
+from postprocessing import *
+
+directory='/Users/mlees/drummer15/data1/mlees/CentralValleyProject1/Subsidence_Phase/interferograms'
+
+data=InSAR_data(directory)
+data.read_unwrapped_interferograms()
+data.calc_mean_correlation()
+data.create_latlon_arrays()
+
+example=np.array([data.lons.transpose(),data.lats.transpose(),data.mean_correlation.transpose()])
+example2 = np.vstack((example,data.unwrapped_interferograms))
+
+columns=['lons','lats','mean_correlation']
+names=[data.unwrapped_filelist[i].split('/')[-1] for i in range(len(data.unwrapped_filelist))]
+columns = np.hstack((columns, names))
+
+import pandas as pd
+output = pd.DataFrame(example2.transpose(),columns=columns)
