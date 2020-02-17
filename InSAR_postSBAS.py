@@ -43,6 +43,8 @@ import simplekml
 FEET_TO_MM = 304.8
 
 
+
+
 #%% 1. Functions which import things
 
 def import_InSAR_csv(filename,sep=','):
@@ -60,9 +62,10 @@ def import_InSAR_csv(filename,sep=','):
         print('\tRenaming columns from latitude/longitude to Latitude/Longitude.')
         csvData.rename(columns={'longitude':'Longitude', 'latitude':'Latitude'},inplace=True)
     
-    print('Checking if any of the date columns start with the letter D and removing that character.')
+    print('\tChecking if any of the date columns start with the letter D and removing that character.')
     A = [tit for tit in csvData.columns if tit.startswith('D20')]
     if len(A) >0:
+        print("\t\tRenaming date columns from DXXXXX to XXXXX.")
 #	date_idxs = np.where(np.isin(csvData.columns,A)) 
         B = [tit.replace('D','') for tit in A]
         for i in range(len(A)):
@@ -334,7 +337,8 @@ def filter_mean_correlation(Data,threshold):
 #%% 3. Functions which do stuff with GPS data - eg project, smooth, make relative.
 	
 def GPSsmooth(GPSdataframe,GPSdates,smooth_window=12):
-    '''Takes a GPS dataframe and returns a smoothed version. Smooth_window is the number of days to smooth over.'''
+    '''Takes a GPS dataframe and returns a smoothed version. Smooth_window is the number of days to smooth over.
+    Returns:      GPStwelvedayavg_NORTH, GPStwelvedayavg_EAST, GPStwelvedayavg_UP, GPSUPdates_padded'''
 
     GPSUP,GPSUPdates_padded = nanpad_series(GPSdates,GPSdataframe['Vertical (mm)'])
     GPSEAST,GPSEASTdates_padded = nanpad_series(GPSdates,GPSdataframe['East (mm)'])
@@ -346,6 +350,54 @@ def GPSsmooth(GPSdataframe,GPSdates,smooth_window=12):
     
     return GPStwelvedayavg_NORTH, GPStwelvedayavg_EAST, GPStwelvedayavg_UP, GPSUPdates_padded
 
+
+def GPSproject(GPS_North,GPS_East,GPS_Up,gpsdates,azimuth,look_angle):
+    '''Takes 3 gps components and projects them to LOS direction.
+    Returns: projected_GPS'''
+    
+    normal_vector = [np.sin(np.deg2rad(look_angle)) * np.sin(np.deg2rad(azimuth)),-np.sin(np.deg2rad(look_angle)) * np.cos(np.deg2rad(azimuth)),np.cos(np.deg2rad(look_angle))]
+    
+    projected_GPS = [np.dot([GPS_North[i],GPS_East[i],GPS_Up[i]],normal_vector) for i in range(len(gpsdates))]
+
+    return projected_GPS
+
+def correct_for_jump(series,dates,date_of_jump,dateformat='dd/mm/yyyy'):
+    '''If you give this function a series and its corresponding dates, it will correct a jump at date_of_jump. date_of_jump should be format 'dd/mm/yyyy'.
+    I GOT IN A RIGHT MESS OVER THIS SO IT PROBABLY DOESNT WORK.'''
+
+
+    print('FUNCTION NOT FINISHED -- I DO NOT THINK THIS WORKS!!!')
+    
+    if dateformat == 'dd/mm/yyyy':
+        print('\tCorrecting for jump in series at %s.' % date_of_jump)
+        date_of_jump2 = date2num(dt.strptime(date_of_jump, '%d/%m/%Y'))
+        idx = np.argmin(np.abs(dates-date_of_jump2))
+        if ~np.isnan(series[idx]):
+            series[idx:] = series[idx:] - (series[idx]-series[idx-1]) # correct the jump
+        else:
+            E = series[idx-30:idx]
+            goodvalues = ~np.isnan(E)
+            goodargs = np.argwhere(goodvalues)
+            tmp = np.argmin(np.abs(goodargs-30))
+            firstarg = goodargs[tmp][0] - 30
+
+            F = series[idx+30:idx]
+            goodvalues = ~np.isnan(E)
+            goodargs = np.argwhere(goodvalues)
+            tmp = np.argmin(np.abs(goodargs-30))
+            secondarg = goodargs[tmp][0] - 30
+
+
+            series[(idx+firstarg):] = series[(idx+firstarg):] - (series[idx+secondard]-series[idx+firstarg]) # correct the jump
+
+    else:
+        
+        print('\tCorrecting for jump in series at %s.' % date_of_jump)
+        idx = np.argmin(np.abs(dates-date_of_jump))
+        series[idx:] = series[idx:] - (series[idx]-series[idx-1]) # correct the jump
+        
+
+    return series
 
 #%% 4. Functions which plot things.
 
@@ -449,29 +501,32 @@ def plot_average_series(Data,avg='both',detrended=False,feet=False,newfig=True):
     
     return fig, ax
 
-def plot_series_latlon(Data,lat,lon,factor=1,newFig=True,title_noints_threshold=False): 
-	'''Plots the time series for a given latitude and longitude pair. First finds the nearest pixel to your lat/lon, then plots the series. Optionally scale the data by a factor (eg to go from LOS to vertical, etc).''' 
-	dist = np.array(np.sqrt((Data["Latitude"] - lat)**2 + (Data["Longitude"] - lon)**2)) 
-	if np.min(dist) >= 1:
-		raise Exception("No pixels found within 1 degree of given lat/lon.") 
-	index = np.argmin(dist) 
-	if newFig: 
-	    fig = plt.figure(figsize=(18,12)) 
-	    ax = fig.add_subplot(111) 
-	else: 
-	    fig = plt.gcf() 
-	    ax = plt.gca() 
-	headings = list(Data.columns.values) 
-	idx_firstdate=np.where([head.startswith('20') for head in headings])[0][0] 
-	dates = headings[idx_firstdate:] 
-	dates_list = [dt.strptime(date, '%Y%m%d').date() for date in dates] 
-	dates = date2num(dates_list)      
-	Series = factor * Data.iloc[index,idx_firstdate:]  
-	ax.plot_date(dates,Series,linestyle='solid') 
+def plot_series_latlon(Data,lat,lon,factor=1,newFig=True,title_noints_threshold=False,rezero_on_date=False):
+    '''Plots the time series for a given latitude and longitude pair. First finds the nearest pixel to your lat/lon, then plots the series. Optionally scale the data by a factor (eg to go from LOS to vertical, etc).''' 
+    dist = np.array(np.sqrt((Data["Latitude"] - lat)**2 + (Data["Longitude"] - lon)**2)) 
+    if np.min(dist) >= 1:
+        raise Exception("No pixels found within 1 degree of given lat/lon.") 
+    index = np.argmin(dist) 
+    if newFig: 
+        fig = plt.figure(figsize=(18,12)) 
+        ax = fig.add_subplot(111) 
+    else: 
+        fig = plt.gcf() 
+        ax = plt.gca() 
+        
+    headings = list(Data.columns.values) 
+    idx_firstdate=np.where([head.startswith('20') for head in headings])[0][0] 
+    dates = headings[idx_firstdate:] 
+    dates_list = [dt.strptime(date, '%Y%m%d').date() for date in dates] 
+    dates = date2num(dates_list)      
+    Series = factor * Data.iloc[index,idx_firstdate:]  
+    if rezero_on_date:
+        Series = rezero_series(Series,dates,rezero_on_date)
+    ax.plot_date(dates,Series,linestyle='solid') 
 
-	if title_noints_threshold: 
+    if title_noints_threshold: 
 	    plt.title('No interferograms = %i; correlation threshold = %.2f' % (Data.iloc[index,np.where([head=='Noints' for head in headings])[0][0]], Data.iloc[index,np.where([head=='Corr_threshold' for head in headings])[0][0]]))     
-	return fig, ax 
+    return fig, ax 
 
 
 def plot_line_with_boxes(x0,x1,y0,y1,BOXESX,BOXESY,lats,lons,fig,colours='RdBu',palette='forwards'):
