@@ -10,6 +10,7 @@ if len(sys.argv) < 3:
 
 
 sys.path.append('/Users/mlees/Documents/RESEARCH/InSAR_processing/postprocessing_scripts/')
+sys.path.append('/home/mlees/Documents/InSAR_processing/postprocessing_scripts/')
 from InSAR_postSBAS import *
 
 
