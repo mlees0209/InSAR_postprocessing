@@ -29,6 +29,8 @@ import geopy.distance
 from fastkml import kml
 from matplotlib import path
 import os as os
+import os.path
+from os import path
 #import pygmt
 from scipy.optimize import leastsq
 import cartopy.io.img_tiles as cimgt
@@ -57,8 +59,16 @@ def import_InSAR_csv(filename,sep=','):
     if 'latitude' in csvData.columns:
         print('\tRenaming columns from latitude/longitude to Latitude/Longitude.')
         csvData.rename(columns={'longitude':'Longitude', 'latitude':'Latitude'},inplace=True)
-
     
+    print('Checking if any of the date columns start with the letter D and removing that character.')
+    A = [tit for tit in csvData.columns if tit.startswith('D20')]
+    if len(A) >0:
+#	date_idxs = np.where(np.isin(csvData.columns,A)) 
+        B = [tit.replace('D','') for tit in A]
+        for i in range(len(A)):
+            csvData.rename(columns={A[i]:B[i]},inplace=True)
+		
+
     print('\tSuccessfully imported data of size %ix%i.\n' % (csvData.shape[0],csvData.shape[1]) )
     return csvData
 
@@ -105,10 +115,24 @@ def import_GPS_data_new(station_name,update=0,ref_frame='nam08',solution='pbo',f
     '''imports GPS data from station name. Returns [data, dates]. Assumes data is stored tidily in /Users/mlees/Documents/RESEARCH/bigdata/GPS/; if it isn't, see the script in that folder which downloads new data.
     Start and End dates can be specified. Default format for that is '%d/%m/%Y', but can also be 'DateNum'. '''
     filename = '%s.%s.%s.%s' % (station_name,solution,ref_frame,fileformat)
-    fileloc = '/home/mlees/Documents/bigdata/GPS/%s/%s' % (station_name,filename)        
+    print("Checking if we're in Linux or Mac...")
+    if path.exists('/home/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
+        mac=1
+        linux=0
+        print("We're in Mac, looking for downloaded GPS data accordingly.")
+        fileloc = '/home/Users/mlees/Documents/RESEARCH/bigdata/GPS/%s/%s' % (station_name,filename)        
+    elif path.exists('/home/mlees/bigdata/GPS'):
+        linux=1
+        mac=0
+        print("We're in Linux, looking for downloaded GPS data accordingly.")
+        fileloc = '/home/mlees/bigdata/GPS/%s/%s' % (station_name,filename)        
+    else:
+        print("Unable to find downloaded GPS data. Check for bigdata/GPS folder. Aborting.")
+        sys.exit()
+        
     
     if update:
-        print('Attempting to fetch latest GPS data.')
+        print('Attempting to fetch latest GPS data; currently only works on Mac.')
         os.system('/Users/mlees/Documents/RESEARCH/bigdata/GPS/fetch_GPS_data.sh %s' % station_name)
         
     print('Importing GPS data from: "%s".' % fileloc)
