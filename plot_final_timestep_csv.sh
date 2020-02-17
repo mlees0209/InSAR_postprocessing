@@ -21,6 +21,14 @@ gmt set FONT_ANNOT_PRIMARY 16p
 gmt set FONT_LABEL 20p
 
 echo -e "\tFinding the last column of the InSARdata, and finding which column is lat/lon."
+
+if grep -q "Latitude" $InSARdata ; then
+	echo 'things are going fine'
+	else echo $InSARdata' does not have column Latitude. Aborting!'
+	exit 2; 
+fi
+
+
 latlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "Latitude" | tr -d ':Latitude')
 latlinenum=$(( $latlinenum - 1 ))
 echo "Latlinnum = "$latlinenum
@@ -59,7 +67,7 @@ gmt psbasemap $reg $proj --MAP_FRAME_TYPE=inside -BSWne -Bxya -K > $outputname.p
 gmt makecpt -Cred2green -T-650/650 -V > colours.cpt.tmp # makes colours for InSAR. THIS CAN BE MADE AUTOMATIC, get colours from the InSAR data and force symmetric, but I haven't done that yet.
 gmt psxy $reg $proj plotting.tmp -Ccolours.cpt.tmp -SJ -V -O >> $outputname.ps
 
-if [ "$contour" = "y" ]; then
+if [ "$contours" = "y" ]; then
 	echo -e "\tForming a contour map."
 	gmt psbasemap $reg $proj --MAP_FRAME_TYPE=inside -BSWne -Bxya -K > $outputname-contour.ps 
 	gmt makecpt -Cred2green -T-800/0/80 > colours.contours.tmp.cpt
@@ -67,6 +75,7 @@ if [ "$contour" = "y" ]; then
 	# Convert the contours too
 	gmt psconvert $outputname-contour.ps -TG -E720 -W+k
 	gmt psconvert $outputname-contour.ps -TG -E720 -W+g
+else echo 'Contour set to '$contour" so not producing a contour map.";
 fi
 
 gmt psconvert $outputname.ps -TG -E720 -W+k+t$toplotfilename+l256/-1
