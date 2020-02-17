@@ -119,15 +119,15 @@ def import_GPS_data_new(station_name,update=0,ref_frame='nam08',solution='pbo',f
     if path.exists('/home/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
         mac=1
         linux=0
-        print("We're in Mac, looking for downloaded GPS data accordingly.")
+        print("\tWe're in Mac, looking for downloaded GPS data accordingly.")
         fileloc = '/home/Users/mlees/Documents/RESEARCH/bigdata/GPS/%s/%s' % (station_name,filename)        
     elif path.exists('/home/mlees/bigdata/GPS'):
         linux=1
         mac=0
-        print("We're in Linux, looking for downloaded GPS data accordingly.")
+        print("\tWe're in Linux, looking for downloaded GPS data accordingly.")
         fileloc = '/home/mlees/bigdata/GPS/%s/%s' % (station_name,filename)        
     else:
-        print("Unable to find downloaded GPS data. Check for bigdata/GPS folder. Aborting.")
+        print("\tUnable to find downloaded GPS data. Check for bigdata/GPS folder. Aborting.")
         sys.exit()
         
     
@@ -165,8 +165,19 @@ def import_GPS_data_new(station_name,update=0,ref_frame='nam08',solution='pbo',f
             #plt.xlim([dt.strptime(startdate, '%d/%m/%Y').date(),dt.strptime(enddate, '%d/%m/%Y').date()])
                 idxs = np.argwhere((date2num(dt.strptime(startdate, '%d/%m/%Y').date()) <= gpsdates) & (gpsdates <= date2num(dt.strptime(enddate, '%d/%m/%Y').date())))
                 gpsdates = gpsdates[idxs]   
-                csvdata = csvdata.iloc[idxs.flatten()]
-            
+                csvdata = csvdata.iloc[idxs.flatten()] 
+    
+    dodgy_titles = ['__east(m)','_north(m)','____up(m)']
+    dodgy_titles_dictionary = {'__east(m)':'East (mm)','_north(m)':'North (mm)','____up(m)':'Vertical (mm)'} # Sometimes the headers have these unhappy names and we need to fix that.    
+    if any(np.isin(csvdata.columns,dodgy_titles)):
+        print('\tImported data has weird headings and units of metres. Correcting both.')
+        for i in np.where(np.isin(csvdata.columns,dodgy_titles))[0]:
+            print('\t\tChanging m to mm.')
+            csvdata[csvdata.columns[i]] = csvdata[csvdata.columns[i]]*1000
+        
+        print('\t\tRenaming headings according to %s.' % dodgy_titles_dictionary)
+        csvdata.rename(columns=dodgy_titles_dictionary,inplace=True)
+
     
     print('\tSuccessfully imported GPS time series of length %i.\n' % len(gpsdates) )
     
@@ -266,7 +277,7 @@ def import_well_seasonaltimeseries(filename):
     dates = date2num(dates)
     return csvData, dates
 
-#%% 2. Functions which extract subsets of inSAR data.
+#%% 2. Functions which extract subsets of InSAR data.
 
 def extract_from_polygon(Polylon,Polylat,Data):
     '''Takes a Pandas Dataframe Data, and a polygon defined by it's (ordered) lon and lat coordinates, and returns a Pandas Datafame corresponding to data only within that polygon.'''
@@ -319,8 +330,24 @@ def filter_mean_correlation(Data,threshold):
 	print('\tDone. Output data of length %i' % len(Data_filt))
 	return Data_filt
 		
+
+#%% 3. Functions which do stuff with GPS data - eg project, smooth, make relative.
 	
-#%% 3. Functions which plot things.
+def GPSsmooth(GPSdataframe,GPSdates,smooth_window=12):
+    '''Takes a GPS dataframe and returns a smoothed version. Smooth_window is the number of days to smooth over.'''
+
+    GPSUP,GPSUPdates_padded = nanpad_series(GPSdates,GPSdataframe['Vertical (mm)'])
+    GPSEAST,GPSEASTdates_padded = nanpad_series(GPSdates,GPSdataframe['East (mm)'])
+    GPSNORTH,GPSNORTHdates_padded = nanpad_series(GPSdates,GPSdataframe['North (mm)'])
+
+    GPStwelvedayavg_UP = np.convolve(GPSUP,np.ones((smooth_window,))/smooth_window,mode='same')
+    GPStwelvedayavg_EAST = np.convolve(GPSEAST,np.ones((smooth_window,))/smooth_window,mode='same')
+    GPStwelvedayavg_NORTH = np.convolve(GPSNORTH,np.ones((smooth_window,))/smooth_window,mode='same')
+    
+    return GPStwelvedayavg_NORTH, GPStwelvedayavg_EAST, GPStwelvedayavg_UP, GPSUPdates_padded
+
+
+#%% 4. Functions which plot things.
 
 def form_kml_timeseries(Data,outname,every_x_pixels=1,plotscalefactor=1,corr_threshold=False):
 	'''Takes an InSAR Data class and creates time series plots for every pixel in that class. Then, packages these plots into a .kml and saves it as outname.'''
@@ -550,7 +577,7 @@ def plot_individual_gps_station_vertical(station_name,sln_type='pbo',startdate=F
     plt.title(station_name)
     plt.ylabel('Vertical motion / mm')
 
-#%% 4. Functions which fit or detrend the data.
+#%% 5. Functions which fit or detrend the data.
     
 def fit_straight_line_to_series(Series,dates):
     '''Fits a straight line and returns misfit, est_slope, est_intercept.'''
@@ -607,7 +634,10 @@ def fit_sinusoid_to_series(Series,dates):
     return misfit,est_amp,est_period,est_phase,est_mean
 
 
-#%% 5. Miscellaneous functions.
+
+
+
+#%% 6. Miscellaneous functions.
 
 def segment_line_to_boxes(x0,x1,y0,y1, spacing, width):
     ''' Returns two arrays containing the lon and lat of boxes, where the boxes are equally spaced along the line defined by two points x0,y0 and x1,y1 (in lat/lon) with spacing and width given in metres.'''
@@ -768,6 +798,21 @@ def kml_to_txt_polygon(kml_filename,outputfilename):
     data=import_kml_polygon(kml_filename)
     dat = np.c_[data[0],data[1]]
     np.savetxt(outputfilename,dat)
+
+def nanpad_series(dates,series):
+    '''Takes a series and its corresponding dates. If there are any missing days in dates, this returns a new series with the missing days filled with 'nans'.'''
+    firstdate = np.min(dates)
+    finaldate = np.max(dates)
+    
+    dates_new = np.arange(firstdate,finaldate+1,1)
+    
+    nanpadded_series = np.empty_like(dates_new)
+    nanpadded_series[:] = np.nan
+    
+    nanpadded_series[np.isin(dates_new,dates)] = series
+    
+    return nanpadded_series,dates_new
+
 
 #%%
         
