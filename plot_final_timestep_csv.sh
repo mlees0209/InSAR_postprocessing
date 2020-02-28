@@ -14,6 +14,11 @@ outputname=$3
 contours=$4
 debugflag=$5
 
+myInvocation="$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")"
+echo "Command called was "$myInvocation" which is written in "$outputname".info."
+echo -e "Command called was:" > $outputname.info
+echo "$myInvocation" >> $outputname.info
+
 proj="-JX15ig" # the final 'g' tells GMT  that this is a linear, geographic projection
 #proj='-JM5i'
 gmt set PS_MEDIA A2
