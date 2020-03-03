@@ -29,8 +29,7 @@ import geopy.distance
 from fastkml import kml
 from matplotlib import path
 import os as os
-import os.path
-from os import path
+import os.path as ospath
 #import pygmt
 from scipy.optimize import leastsq
 import cartopy.io.img_tiles as cimgt
@@ -75,8 +74,24 @@ def import_InSAR_csv(filename,sep=','):
     print('\tSuccessfully imported data of size %ix%i.\n' % (csvData.shape[0],csvData.shape[1]) )
     return csvData
 
-def import_GPS_stations(file='/Users/mlees/Documents/RESEARCH/ground_deformation/GPS/gage_gps.igs08.txt'):
+def import_GPS_stations():
     '''Reads in the UNAVCO list of all GPS stations.'''
+    
+    print("Checking if we're in Linux or Mac...")
+    if ospath.exists('/home/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
+        mac=1
+        linux=0
+        print("\tWe're in Mac, looking for downloaded GPS data accordingly.")
+        file='/Users/mlees/Documents/RESEARCH/ground_deformation/GPS/gage_gps.igs08.txt'
+    elif ospath.exists('/home/mlees/bigdata/GPS'):
+        linux=1
+        mac=0
+        print("\tWe're in Linux, looking for downloaded GPS data accordingly.")
+        file='/home/mlees/ground_deformation/GPS/gage_gps.igs08.txt'
+    else:
+        print("\tUnable to find downloaded GPS data. Check for bigdata/GPS folder. Aborting.")
+        sys.exit()
+
     gpsfile = pd.read_csv(file,header=5, skipinitialspace=True, delimiter=", ")
     gpsfile.rename(columns={'Latitude (deg)':'Latitude','Longitude (deg)': 'Longitude'},inplace=True)
     return gpsfile
@@ -119,12 +134,12 @@ def import_GPS_data_new(station_name,update=0,ref_frame='nam08',solution='pbo',f
     Start and End dates can be specified. Default format for that is '%d/%m/%Y', but can also be 'DateNum'. '''
     filename = '%s.%s.%s.%s' % (station_name,solution,ref_frame,fileformat)
     print("Checking if we're in Linux or Mac...")
-    if path.exists('/home/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
+    if ospath.exists('/home/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
         mac=1
         linux=0
         print("\tWe're in Mac, looking for downloaded GPS data accordingly.")
         fileloc = '/home/Users/mlees/Documents/RESEARCH/bigdata/GPS/%s/%s' % (station_name,filename)        
-    elif path.exists('/home/mlees/bigdata/GPS'):
+    elif ospath.exists('/home/mlees/bigdata/GPS'):
         linux=1
         mac=0
         print("\tWe're in Linux, looking for downloaded GPS data accordingly.")
@@ -621,7 +636,7 @@ def plot_individual_gps_station_vertical(station_name,sln_type='pbo',startdate=F
 
     elif sln_type=='ngl':
         data,dates = import_GPS_data_new(station_name,solution='ngl',ref_frame='NA',fileformat='tenv3')
-        plt.plot_date(dates,1000*data['____up(m)'])
+        plt.plot_date(dates,data['Vertical (mm)'])
 
     
     
