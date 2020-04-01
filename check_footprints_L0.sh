@@ -3,9 +3,18 @@
 # Usage: check_footprints_L0.sh DIRECTORY <--- where DIRECTORY is the directory containing the unzipped .SAFE directories containing L0 data.
 
 # Set up variables
+echo -e "WARNING; this script will delete any kml (but not kmz) files in the current directory. Run it in an empty directory if this will be a problem!"
+echo -e
+
+# Create an info file
+myInvocation="$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")"
+echo "Command called was "$myInvocation" which is written in "footprints".info."
+echo -e "Command called was:" > footprints.info
+echo "$myInvocation" >> footprints.info
+
+
 folder=$1
 source gmt_shell_functions.sh
-rm *.tmp
 
 echo -e "Getting L0 footprints from "$folder
 ls -d $folder/*.SAFE > filenames.tmp # get the list of .SAFE files
@@ -37,7 +46,10 @@ echo -e "	"$linefilename
 gmt 2kml kmlmaker.tmp -Fp -Gf$col -:i > $linefilename.kml
 done
 
-gmt_build_kmz -p bestfootprint -r *.kml # Stich together all the individual footprint km into one kmz
+gmt_build_kmz -p "footprints" *SAFE.kml # Stich together all the individual footprint km into one kmz
+lastkmlfilename=`tail -n 1 filenames.tmp| cut -d / -f 2`
+
+mv $lastkmlfilename.kmz footprints.kmz
 
 ### OPTIONAL SECTION: make a pdf map. Can comment this out.
 
