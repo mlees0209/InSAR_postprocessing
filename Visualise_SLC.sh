@@ -8,12 +8,19 @@
 # Usage: Visualise_SLC slcfilenam demfilename		where slcfilename is 'NAME.geo.amplitude' (having been put into amplitude over on Drummer).
 
 slcfilename=$1
+geofiletag=$(echo $slcfilename | rev | cut -d '/' -f1 | rev) # This is the outputname basically
+
+# Create an info file
+myInvocation="$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")"
+echo "Command called was "$myInvocation" which is written in "$geofiletag".info."
+echo -e "Command called was:" > $geofiletag.info
+echo "$myInvocation" >> $geofiletag.info
+
 pathlength=$(tr -dc '/' <<< $slcfilename | wc -c | tr -d ' ')
 #demfilename=$(echo $slcfilename | cut -d '/' -f 1-$pathlength)"/elevation.dem.rsc"
 #demfilename='drummer16/pepin/cv_asc/elevation_interp_us.dem.rsc'
 demfilename=$2
 
-geofiletag=$(echo $slcfilename | rev | cut -d '/' -f1 | rev)
 echo -e ".geo filename is "$geofiletag
 echo -e "DEM filename guessed to be "$demfilename". If this isn't right then it'll all go to shit." 
 
