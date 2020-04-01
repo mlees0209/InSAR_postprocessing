@@ -7,6 +7,13 @@ echo "Visualise_anything.sh usage: visualise_anything FILE_TO_PLOT DEM.RSC_FILE.
 toplotfilename=$1
 demfilename=$2
 
+# Create an info file
+myInvocation="$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")"
+echo "Command called was "$myInvocation" which is written in "$toplotfilename".info."
+echo -e "Command called was:" > $toplotfilename.info
+echo "$myInvocation" >> $toplotfilename.info
+
+
 echo -e "DEM filename guessed to be "$demfilename". If this isn't right then it'll all go to shit." 
 
 proj=-JX15i
@@ -44,7 +51,7 @@ echo "	Do that? [Y,n]"
 read input
 if [[ $input == "Y" || $input == "y" ]]; then
         deltalat=$(gmt math -Q $deltalat -1 MUL =)
-		gmt xyz2grd $toplotfilename -G$toplotfilename.nc.tmp -I$nolons+/$nolats+ $reg -ZTLd -Vl
+		gmt xyz2grd $toplotfilename -G$toplotfilename.nc.tmp -I$nolons+/$nolats+ $reg -ZTLf -Vl
 
 else
         echo "	Moving on to the next step, assuming the grid already exists (if it doesn't you'll get nothing but errors now)"
