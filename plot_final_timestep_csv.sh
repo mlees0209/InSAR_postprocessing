@@ -69,15 +69,15 @@ paste plotting.tmp azimuth.tmp > plotting3.tmp
 paste plotting3.tmp pixelsize.tmp > plotting2.tmp
 paste plotting2.tmp pixelsize.tmp > plotting.tmp
 
-maxdef=$(gmt info -T1+c2 plotting.tmp | cut -d '/' -f 2) # This command assumes that the maximum deformation is in the positive direction.
+maxdef=$(gmt info -T1+c2 plotting.tmp | cut -d '/' -f 1 | tr -d "T" | tr -d "-") # This command assumes that the maximum deformation is in the negative direction.
 echo "maxdef is "$maxdef
 
 echo -e "\tForming a coloured-point map."
 
-gmt psbasemap $reg $proj --MAP_FRAME_TYPE=inside -BSWne -Bxya -K > $outputname.ps # Plot the map frame.
+#gmt psbasemap $reg $proj --MAP_FRAME_TYPE=inside -BSWne -Bxya -K > $outputname.ps # Plot the map frame.
 
-gmt makecpt -Cred2green -T-650/650 -V > colours.cpt.tmp # makes colours for InSAR. THIS CAN BE MADE AUTOMATIC, get colours from the InSAR data and force symmetric, but I haven't done that yet.
-gmt psxy $reg $proj plotting.tmp -Ccolours.cpt.tmp -SJ -V -O >> $outputname.ps
+gmt makecpt -Cred2green -T-$maxdef/$maxdef -V > colours.cpt.tmp # makes colours for InSAR. 
+gmt psxy $reg $proj plotting.tmp -Ccolours.cpt.tmp -SJ -V > $outputname.ps
 
 if [ "$contours" = "y" ]; then
 	echo -e "\tForming a contour map."
@@ -87,16 +87,16 @@ if [ "$contours" = "y" ]; then
 	# Convert the contours too
 	gmt psconvert $outputname-contour.ps -TG -E720 -W+k
 	gmt psconvert $outputname-contour.ps -TG -E720 -W+g
-else echo 'Contour set to '$contour" so not producing a contour map.";
+else echo 'Contour set to '$contours" so not producing a contour map.";
 fi
 
-gmt psconvert $outputname.ps -TG -E720 -W+k+t$toplotfilename+l256/-1
-gmt psconvert $outputname.ps -TG -E720 -W+g
+gmt psconvert $outputname.ps -TG -E720 -W+k+t$toplotfilename+l256/-1 -Vl
+gmt psconvert $outputname.ps -TG -E720 -W+g -Vl
 
 
 # Do a separate scalebar
 echo "Making a separate colourbar with name colorbar.png. Will overwrite an existing file with that time."
-gmt psscale -Ccolours.cpt.tmp -Dx8c/1c+w12c/0.5c+jTC+h -Bxaf+l"Deformation / mm" -P > $outputname.colorbar.ps
+gmt psscale -Ccolours.cpt.tmp -Dx8c/1c+w12c/0.5c+jTC+h -Bxaf+l"Deformation (mm)" -P > $outputname.colorbar.ps
 gmt psconvert $outputname.colorbar.ps -Tg -A
 
 if [ -z "$debugflag" ]; then 
