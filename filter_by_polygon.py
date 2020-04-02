@@ -26,4 +26,4 @@ A= import_InSAR_csv(infile)
 B = extract_from_polygon(Polylon,Polylat,A)
 
 
-B.to_csv(outfile,index=False)
+B.to_csv(outfile,index=False,na_rep='NaN')
