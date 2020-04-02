@@ -29,17 +29,24 @@ echo -e "\tFinding the last column of the InSARdata, and finding which column is
 
 if grep -q "Latitude" $InSARdata ; then
 	echo 'things are going fine'
-	else echo $InSARdata' does not have column Latitude. Aborting!'
+	latlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "Latitude" | tr -d ':Latitude')
+	latlinenum=$(( $latlinenum - 1 ))
+	echo "Latlinnum = "$latlinenum
+	lonlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "Longitude" | tr -d ':Longitude')
+	lonlinenum=$(( $lonlinenum - 1 ))
+	echo "Lonlinenum = "$lonlinenum
+	elif grep -q "X" $InSARdata ; then
+		latlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "Y" | tr -d ':Y')
+		latlinenum=$(( $latlinenum - 1 ))
+		echo "Latlinnum = "$latlinenum
+		lonlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "X" | tr -d ':X')
+		lonlinenum=$(( $lonlinenum - 1 ))
+		echo "Lonlinenum = "$lonlinenum
+	else echo $InSARdata' does not have column Latitude or X. Aborting!'
 	exit 2; 
 fi
 
 
-latlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "Latitude" | tr -d ':Latitude')
-latlinenum=$(( $latlinenum - 1 ))
-echo "Latlinnum = "$latlinenum
-lonlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "Longitude" | tr -d ':Longitude')
-lonlinenum=$(( $lonlinenum - 1 ))
-echo "Lonlinenum = "$lonlinenum
 finaldate=$(head -1 $InSARdata | rev | cut -d',' -f1 | rev)
 maxdeflinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n $finaldate | cut -d ':' -f1)
 maxdeflinenum=$(( $maxdeflinenum - 1 ))
