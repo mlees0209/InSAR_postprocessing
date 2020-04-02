@@ -36,6 +36,8 @@ import cartopy.io.img_tiles as cimgt
 import cartopy.crs as ccrs
 import scipy.signal
 import simplekml
+import sys
+from astropy.convolution import convolve
 
 #%% Define important constants.
 
@@ -134,11 +136,11 @@ def import_GPS_data_new(station_name,update=0,ref_frame='nam08',solution='pbo',f
     Start and End dates can be specified. Default format for that is '%d/%m/%Y', but can also be 'DateNum'. '''
     filename = '%s.%s.%s.%s' % (station_name,solution,ref_frame,fileformat)
     print("Checking if we're in Linux or Mac...")
-    if ospath.exists('/home/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
+    if ospath.exists('/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
         mac=1
         linux=0
         print("\tWe're in Mac, looking for downloaded GPS data accordingly.")
-        fileloc = '/home/Users/mlees/Documents/RESEARCH/bigdata/GPS/%s/%s' % (station_name,filename)        
+        fileloc = '/Users/mlees/Documents/RESEARCH/bigdata/GPS/%s/%s' % (station_name,filename)        
     elif ospath.exists('/home/mlees/bigdata/GPS'):
         linux=1
         mac=0
@@ -201,6 +203,17 @@ def import_GPS_data_new(station_name,update=0,ref_frame='nam08',solution='pbo',f
     
     #return X[1:,1:6], gpsdates
     return csvdata,gpsdates
+
+def import_GPS_data_CAMPAIGN(stn):
+    '''Returns DATES, SERIES for a Matt_Jacobus GPS station with name stn. Series is the vertical series in mm.'''
+    
+    passive_data = pd.read_excel('/Users/mlees/Documents/RESEARCH/ground_deformation/GPS/From_Matt_Jacobus/MLees_20200228.xlsx')
+
+    dates = passive_data['YRMO'][passive_data['STATION']==stn]
+
+    dates = [date2num(dt.strptime(date, '%Y%b').date()) for date in dates]
+    data=FEET_TO_MM* passive_data['ELEf'][passive_data['STATION']==stn].values
+    return dates,data
 
 
 def import_kml_line(filename):
@@ -351,7 +364,7 @@ def filter_mean_correlation(Data,threshold):
 
 #%% 3. Functions which do stuff with GPS data - eg project, smooth, make relative.
 	
-def GPSsmooth(GPSdataframe,GPSdates,smooth_window=12):
+def GPSsmooth(GPSdataframe,GPSdates,smooth_window=11):
     '''Takes a GPS dataframe and returns a smoothed version. Smooth_window is the number of days to smooth over.
     Returns:      GPStwelvedayavg_NORTH, GPStwelvedayavg_EAST, GPStwelvedayavg_UP, GPSUPdates_padded'''
 
@@ -359,9 +372,9 @@ def GPSsmooth(GPSdataframe,GPSdates,smooth_window=12):
     GPSEAST,GPSEASTdates_padded = nanpad_series(GPSdates,GPSdataframe['East (mm)'])
     GPSNORTH,GPSNORTHdates_padded = nanpad_series(GPSdates,GPSdataframe['North (mm)'])
 
-    GPStwelvedayavg_UP = np.convolve(GPSUP,np.ones((smooth_window,))/smooth_window,mode='same')
-    GPStwelvedayavg_EAST = np.convolve(GPSEAST,np.ones((smooth_window,))/smooth_window,mode='same')
-    GPStwelvedayavg_NORTH = np.convolve(GPSNORTH,np.ones((smooth_window,))/smooth_window,mode='same')
+    GPStwelvedayavg_UP = convolve(GPSUP,np.array([1]*smooth_window)/smooth_window,preserve_nan=True)
+    GPStwelvedayavg_EAST = convolve(GPSEAST,np.array([1]*smooth_window)/smooth_window,preserve_nan=True)
+    GPStwelvedayavg_NORTH = convolve(GPSNORTH,np.array([1]*smooth_window)/smooth_window,preserve_nan=True)
     
     return GPStwelvedayavg_NORTH, GPStwelvedayavg_EAST, GPStwelvedayavg_UP, GPSUPdates_padded
 
@@ -376,7 +389,7 @@ def GPSproject(GPS_North,GPS_East,GPS_Up,gpsdates,azimuth,look_angle):
 
     return projected_GPS
 
-def correct_for_jump(series,dates,date_of_jump,dateformat='dd/mm/yyyy'):
+def correct_for_jump(series,dates,date_of_jump,dateformat='dd/mm/yyyy',jumplength=10):
     '''If you give this function a series and its corresponding dates, it will correct a jump at date_of_jump. date_of_jump should be format 'dd/mm/yyyy'.
     I GOT IN A RIGHT MESS OVER THIS SO IT PROBABLY DOESNT WORK.'''
 
@@ -388,8 +401,10 @@ def correct_for_jump(series,dates,date_of_jump,dateformat='dd/mm/yyyy'):
         date_of_jump2 = date2num(dt.strptime(date_of_jump, '%d/%m/%Y'))
         idx = np.argmin(np.abs(dates-date_of_jump2))
         if ~np.isnan(series[idx]):
-            series[idx:] = series[idx:] - (series[idx]-series[idx-1]) # correct the jump
+            series[idx-jumplength:] = series[idx-jumplength:] - (series[idx]-series[idx-jumplength]) # correct the jump
+            series[idx-jumplength:idx] = np.nan
         else:
+            print('This will likely now break as your jumpdate is a nan.')
             E = series[idx-30:idx]
             goodvalues = ~np.isnan(E)
             goodargs = np.argwhere(goodvalues)
