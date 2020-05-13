@@ -19,7 +19,7 @@ echo "Command called was "$myInvocation" which is written in "$outputname".info.
 echo -e "Command called was:" > $outputname.info
 echo "$myInvocation" >> $outputname.info
 
-proj="-JX15ig" # the final 'g' tells GMT  that this is a linear, geographic projection
+proj="-JX15iG" # the final 'g' tells GMT  that this is a linear, geographic projection
 #proj='-JM5i'
 gmt set PS_MEDIA A2
 gmt set FONT_ANNOT_PRIMARY 16p
@@ -77,7 +77,8 @@ echo -e "\tForming a coloured-point map."
 #gmt psbasemap $reg $proj --MAP_FRAME_TYPE=inside -BSWne -Bxya -K > $outputname.ps # Plot the map frame.
 
 gmt makecpt -Cred2green -T-$maxdef/$maxdef -V > colours.cpt.tmp # makes colours for InSAR. 
-gmt psxy $reg $proj plotting.tmp -Ccolours.cpt.tmp -SJ -V > $outputname.ps
+gmt psbasemap $reg $proj --MAP_FRAME_TYPE=inside -BSWne -Bxya -K > $outputname.ps
+gmt psxy $reg $proj plotting.tmp -Ccolours.cpt.tmp -SJ -V -O >> $outputname.ps
 
 if [ "$contours" = "y" ]; then
 	echo -e "\tForming a contour map."
@@ -90,8 +91,8 @@ if [ "$contours" = "y" ]; then
 else echo 'Contour set to '$contours" so not producing a contour map.";
 fi
 
-gmt psconvert $outputname.ps -TG -E720 -W+k+t$toplotfilename+l256/-1 -Vl
-gmt psconvert $outputname.ps -TG -E720 -W+g -Vl
+gmt psconvert $outputname.ps -E720 -W+g -Vl
+#gmt psconvert $outputname.ps -TG -E720 -W+k+t$toplotfilename+l256/-1 -Vl
 
 
 # Do a separate scalebar
