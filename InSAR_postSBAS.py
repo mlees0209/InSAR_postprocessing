@@ -372,9 +372,9 @@ def GPSsmooth(GPSdataframe,GPSdates,smooth_window=11):
     GPSEAST,GPSEASTdates_padded = nanpad_series(GPSdates,GPSdataframe['East (mm)'])
     GPSNORTH,GPSNORTHdates_padded = nanpad_series(GPSdates,GPSdataframe['North (mm)'])
 
-    GPStwelvedayavg_UP = convolve(GPSUP,np.array([1]*smooth_window)/smooth_window,preserve_nan=True)
-    GPStwelvedayavg_EAST = convolve(GPSEAST,np.array([1]*smooth_window)/smooth_window,preserve_nan=True)
-    GPStwelvedayavg_NORTH = convolve(GPSNORTH,np.array([1]*smooth_window)/smooth_window,preserve_nan=True)
+    GPStwelvedayavg_UP = convolve(GPSUP,np.array([1]*smooth_window)/smooth_window,preserve_nan=True,boundary='extend')
+    GPStwelvedayavg_EAST = convolve(GPSEAST,np.array([1]*smooth_window)/smooth_window,preserve_nan=True,boundary='extend')
+    GPStwelvedayavg_NORTH = convolve(GPSNORTH,np.array([1]*smooth_window)/smooth_window,preserve_nan=True,boundary='extend')
     
     return GPStwelvedayavg_NORTH, GPStwelvedayavg_EAST, GPStwelvedayavg_UP, GPSUPdates_padded
 
