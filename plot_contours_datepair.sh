@@ -1,11 +1,12 @@
 #!/bin/bash
 
-### This script plots the contour map between two dates in an InSAR csv file. 
-#
+### This script plots the contour map between two dates in an InSAR csv file. Dates should be in YYYYMMDD format.
+
+
 
 
 if [ "$#" -lt 3 ]; then
-    echo "Useage: ./plot_contours_datepair InSARdata startdate enddate pixelsize outputname [debugflag]"
+    echo "Useage: ./plot_contours_datepair InSARdata startdate enddate pixelsize contour_int outputname [debugflag]"
     exit 2
 fi
 
@@ -21,6 +22,8 @@ myInvocation="$(printf %q "$BASH_SOURCE")$((($#)) && printf ' %q' "$@")"
 echo "Command called was "$myInvocation" which is written in "$outputname".info."
 echo -e "Command called was:" > $outputname.info
 echo "$myInvocation" >> $outputname.info
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 proj="-JX15ig" # the final 'g' tells GMT  that this is a linear, geographic projection
 #proj='-JM5i'
@@ -43,8 +46,8 @@ echo "Latlinnum = "$latlinenum
 lonlinenum=$(head -1 $InSARdata | tr ',' '\n' | grep -n "Longitude" | tr -d ':Longitude')
 lonlinenum=$(( $lonlinenum - 1 ))
 echo "Lonlinenum = "$lonlinenum
-startdatelinenum=$(~/InSAR_processing/postprocessing_scripts/python_subroutines/get_column_no_from_date.py $InSARdata $startdate)
-enddatelinenum=$(~/InSAR_processing/postprocessing_scripts/python_subroutines/get_column_no_from_date.py $InSARdata $enddate)
+startdatelinenum=$($DIR/python_subroutines/get_column_no_from_date.py $InSARdata $startdate)
+enddatelinenum=$($DIR/python_subroutines/get_column_no_from_date.py $InSARdata $enddate)
 echo "startdatelinenum = "$startdatelinenum
 echo "enddatelinenum = "$enddatelinenum
 
@@ -62,12 +65,15 @@ gmt grdmath enddate.tmp.nc firstdate.tmp.nc SUB = difference.tmp.nc
 gmt grd2xyz difference.tmp.nc -s > plotting.tmp
 
 echo -e "Making colourscale; it will automatically be symmetric about zero."
+maxdef=$(gmt info -T1+c2 plotting.tmp | cut -d '/' -f 1 | cut -d '-' -f 3) # This command assumes that the maximum deformation is in the negative direction.
+echo "maxdef is "$maxdef
+
 #gmt grd2cpt difference.tmp.nc -Cred2green -T= -Z > colours.cpt.tmp
-gmt makecpt -Cred2green -T-350/350 -V > colours.cpt.tmp # makes colours for InSAR. THIS CAN BE MADE
+gmt makecpt -Cred2green -T-$maxdef/$maxdef -V > colours.cpt.tmp # makes colours for InSAR. THIS CAN BE MADE
 
 echo -e "\tForming the map."
 gmt psbasemap $reg $proj --MAP_FRAME_TYPE=inside -BSWne -Bxya -K > $outputname.ps # Plot the map frame.
-gmt grdimage difference.tmp.nc $proj -Ccolours.cpt.tmp -Q -O -K >> $outputname.ps
+gmt grdimage difference.tmp.nc $proj -Ccolours.cpt.tmp -Q -O >> $outputname.ps
 #gmt grdimage grid_interp.tmp.nc $proj -Ccolours.cpt.tmp -Q -O -K >> $outputname.ps
 
 echo -e "\tPutting contours on top."
