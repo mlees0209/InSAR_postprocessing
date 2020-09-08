@@ -4,3 +4,4 @@ Scripts here fit into basic categories:
 	- General utility scripts, eg "downsacle_DEM.sh".
 	- postprocessing.py, a python script which contains all you ever need for manipulating data. This covers all steps after making unwrapped interferograms on drummer. 
 	- "python_subroutines" contains Python scripts which may bring together several of the functions in postprocessing.py, or which are too specific to need their own function/class in postprocessing.py.
+	- "InSAR_postSBAS.py" is a big script containing codes/functions for manipulating processed InSAR time series, which can be imported from large .csv files and manipulated to eg. extract data from a specific point/polygon, average data, compare with GPS, and other tasks.
