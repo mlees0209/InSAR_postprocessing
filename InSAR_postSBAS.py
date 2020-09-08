@@ -8,8 +8,8 @@ This script defines a number of functions which will be used for InSAR postproce
 Several of these functions are directly lifted from an earlier version called 'InSAR_processing.py'. Others are new. 
 
 The functions are organised as follows:
-    1. Functions which import things eg GPS data, inSAR data, kml lines...
-    2. Functions which take inSAR data and extract a subset. eg extract from box, etc.
+    1. Functions which import things eg GPS data, InSAR data, kml lines...
+    2. Functions which take InSAR data and extract a subset. eg extract from box, etc.
     3. Functions which plot things, eg. plot from box, etc.
     4. Miscellaneous functions.
 
@@ -32,8 +32,8 @@ import os as os
 import os.path as ospath
 #import pygmt
 from scipy.optimize import leastsq
-import cartopy.io.img_tiles as cimgt
-import cartopy.crs as ccrs
+#import cartopy.io.img_tiles as cimgt
+#import cartopy.crs as ccrs
 import scipy.signal
 import simplekml
 import sys
@@ -499,8 +499,8 @@ def plot_average_series(Data,avg='both',detrended=False,feet=False,newfig=True):
     
     pal = sns.color_palette(palette="RdBu",n_colors=10).as_hex()[::-1]
     
-    mean_def = np.mean(Series,axis=0)
-    median_def = np.median(Series,axis=0)
+    mean_def = np.nanmean(Series,axis=0)
+    median_def = np.nanmedian(Series,axis=0)
     
     if avg == 'both': 
         ax.plot_date(dates,mean_def,linestyle='solid',label='Mean')
