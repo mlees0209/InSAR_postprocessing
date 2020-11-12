@@ -70,6 +70,7 @@ paste plotting3.tmp pixelsize.tmp > plotting2.tmp
 paste plotting2.tmp pixelsize.tmp > plotting.tmp
 
 maxdef=$(gmt info -T1+c2 plotting.tmp | cut -d '/' -f 1 | tr -d "T" | tr -d "-") # This command assumes that the maximum deformation is in the negative direction.
+maxdef=350
 echo "maxdef is "$maxdef
 
 echo -e "\tForming a coloured-point map."
@@ -92,7 +93,7 @@ else echo 'Contour set to '$contours" so not producing a contour map.";
 fi
 
 gmt psconvert $outputname.ps -E720 -W+g -Vl
-#gmt psconvert $outputname.ps -TG -E720 -W+k+t$toplotfilename+l256/-1 -Vl
+gmt psconvert $outputname.ps -TG -E720 -W+k+t$toplotfilename+l256/-1 -Vl
 
 
 # Do a separate scalebar
