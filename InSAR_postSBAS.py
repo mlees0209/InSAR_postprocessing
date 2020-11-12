@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Sat Mar  2 21:02:18 2019
@@ -530,6 +529,50 @@ def plot_average_series(Data,avg='both',detrended=False,feet=False,newfig=True):
 #    ax.xaxis.set_major_formatter(DateFormatter('%b-%Y') )
     
     return fig, ax
+
+def plot_all(Data,feet=False,newfig=True,rezero_on_date=False):
+    '''Takes a panda Dataframe and plots the ALL of the timeseries. Do not do this if your dataset is large...'''
+    
+    if newfig:
+        fig = plt.figure(figsize=(18,12))
+        ax = fig.add_subplot(111)
+    else:
+        fig = plt.gcf()
+        ax = plt.gca()
+    
+    headings = list(Data.columns.values)
+    idx_firstdate=np.where([head.startswith('20') for head in headings])[0][0]
+    print('\tFirst date is found in column %i' % idx_firstdate)
+    dates = headings[idx_firstdate:]
+    dates_list = [dt.strptime(date, '%Y%m%d').date() for date in dates]
+    dates = date2num(dates_list)
+      
+    Series = Data[Data.columns[idx_firstdate:]].values
+    
+    if np.shape(Series)[0]<1000:
+        print('About to plot %i lines; WARNING, may be slow.' % np.shape(Series)[0])
+    else:
+        print('There are %i lines to plot; ABORTING.' % np.shape(Series)[0])
+        sys.exit(1)
+        
+    if feet:
+        Series = FEET_TO_MM * Series
+
+    
+
+    for i in range(len(Series)):
+        if rezero_on_date:   
+            dat = rezero_series(Series[i,:],dates,rezero_on_date)
+        else:
+            dat = Series[i,:]
+            
+        plt.plot_date(dates,dat)
+    
+    plt.xlabel('Date')
+    plt.ylabel('InSAR displacement (mm)')
+
+    return fig, ax
+
 
 def plot_series_latlon(Data,lat,lon,factor=1,newFig=True,title_noints_threshold=False,rezero_on_date=False):
     '''Plots the time series for a given latitude and longitude pair. First finds the nearest pixel to your lat/lon, then plots the series. Optionally scale the data by a factor (eg to go from LOS to vertical, etc).''' 
