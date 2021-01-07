@@ -29,7 +29,7 @@ from fastkml import kml
 from matplotlib import path
 import os as os
 import os.path as ospath
-#import pygmt
+import pygmt
 from scipy.optimize import leastsq
 #import cartopy.io.img_tiles as cimgt
 #import cartopy.crs as ccrs
@@ -669,16 +669,24 @@ def plot_map_finaltimestep(Data,backgroundquality=10,projection="M8i",region="ti
 
 
     # Normalise the displacement on the final timestep
-    print('\tNormalising displacement (pygmt currently only plots values between 0 and 1).')
+
+    print('\tMaking colormap.')
     finaltime = list(Data.columns.values)[-1]
-    normalised_displacement=0.5*(Data[finaltime]/ np.max([np.max(Data[finaltime]),np.abs(np.min(Data[finaltime]))]) + 1)
+    initialtime = [column for column in list(Data.columns) if column.startswith('2')][0]
+    pygmt.makecpt(cmap="seis", series=[np.min(Data[finaltime]),np.max(Data[finaltime]),10]) # make the colorscale; nb that for future this will change if the colorscale corresponds to rate of subsidence.
+
 
     print('\tPlotting InSAR data.')
-    fig.plot(x=Data["Longitude"],y=Data["Latitude"],style="J-%s" % pixelsize,color=normalised_displacement,pen=False,cmap=cmap) # style = J-250e means 250m edge length rectangles
+    fig.plot(x=Data["Longitude"],y=Data["Latitude"],style="J-%s" % pixelsize,cmap=True,pen=False,color=Data[finaltime].values) # style = J-250e means 250m edge length rectangles
+
+    print('\tAdding scale.')
+    with pygmt.config(FONT_LABEL="14p",FONT_ANNOT_PRIMARY="14p"): # font sizes for colorbar
+        fig.colorbar(frame='af+l"Deformation %s to %s (cm)"' % (initialtime, finaltime),scale=0.1,position='jTL+w10+o1/1+h',F='l+gwhite@20') # make the colorbar
+
 
     print('\tRendering, saving, displaying.')
     fig.savefig("points.tmp.pdf",show=True,crop=True)
-
+    fig.show()
     print("\tDone.\n")
 
 
