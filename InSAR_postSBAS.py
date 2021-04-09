@@ -79,7 +79,7 @@ def import_GPS_stations():
     '''Reads in the UNAVCO list of all GPS stations.'''
     
     print("Checking if we're in Linux or Mac...")
-    if ospath.exists('/home/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
+    if ospath.exists('/Users/mlees/Documents/RESEARCH/bigdata/GPS'):
         mac=1
         linux=0
         print("\tWe're in Mac, looking for downloaded GPS data accordingly.")
@@ -319,7 +319,7 @@ def extract_from_polygon(Polylon,Polylat,Data):
         
     inbox = inpolygon(np.asarray(lon),np.asarray(lat),np.asarray(Polylon),np.asarray(Polylat))
     Datafilt = Data[inbox]
-    print('\tExraction completed. New dataset has %i pixels.' % len(Datafilt))
+    print('\tExtraction completed. New dataset has %i pixels.' % len(Datafilt))
     return Datafilt
 
 def extract_series_from_latlon(lat,lon,Data,startdate=False,enddate=False,factor=1):
@@ -631,7 +631,7 @@ def plot_line_with_boxes(x0,x1,y0,y1,BOXESX,BOXESY,lats,lons,fig,colours='RdBu',
     return ax1
 
 def plot_map_finaltimestep(Data,backgroundquality=10,projection="M8i",region="tight",pixelsize='250e',cmap='viridis'):
-    '''This function uses the PyGMT package to produce a nice, simple map showing the spatial variation of deformation between the first and last timestep. At the moment, PyGMT does not provide facility for a scalebar or title. This function creates a file called 'points.tmp.pdf' which has to be manually removed afterwards. This function doesn't deal with Tom's newer data in which X and Y are called latitude and longitude.
+    '''This function uses the PyGMT package to produce a nice, simple map showing the spatial variation of deformation between the first and last timestep. This function creates a file called 'points.tmp.pdf' which has to be manually removed afterwards. This function doesn't deal with Tom's newer data in which X and Y are called latitude and longitude (? not sure this is right, I think it may be fixed in the import option).
 
     Optional arguments:
 
@@ -862,12 +862,15 @@ def get_mean_series(Data):
     '''Takes a Pandas Dataframe and returns single dataseries corresponding to the mean deformation at each timestep in the origianl data.'''
     headings = list(Data.columns.values)
     idx_firstdate=np.where([head.startswith('20') for head in headings])[0][0]
+    dates = headings[idx_firstdate:]
+    dates_list = [dt.strptime(date, '%Y%m%d').date() for date in dates]
+    dates = date2num(dates_list)
 
     Series = Data[Data.columns[idx_firstdate:]].values
-    mean_def = np.mean(Series,axis=0)
+    mean_def = np.nanmean(Series,axis=0)
     n = Data.shape[0]
     #median_def = np.median(Series,axis=0)
-    return mean_def,n
+    return dates,mean_def,n
 
 
 def inpolygon(xq, yq, xv, yv):
