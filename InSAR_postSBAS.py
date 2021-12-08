@@ -22,19 +22,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import date2num
 from datetime import datetime as dt
-import seaborn as sns
+#import seaborn as sns
 from datetime import date
-import geopy.distance
+#import geopy.distance
 from fastkml import kml
 from matplotlib import path
 import os as os
 import os.path as ospath
-import pygmt
-from scipy.optimize import leastsq
+#import pygmt
+#from scipy.optimize import leastsq
 #import cartopy.io.img_tiles as cimgt
 #import cartopy.crs as ccrs
-import scipy.signal
-import simplekml
+#import scipy.signal
+#import simplekml
 import sys
 from astropy.convolution import convolve
 
@@ -332,6 +332,7 @@ def extract_series_from_latlon(lat,lon,Data,startdate=False,enddate=False,factor
     if np.min(dist) >= 0.5:
         raise Exception("No pixels found within 0.5 degree of given lat/lon.")
     index = np.argmin(dist)
+    print('Pixel found within approximately %.3f km of specified lat/lon.' % (dist[index]*111.))
 
     headings = list(Data.columns.values)
     idx_firstdate=np.where([head.startswith('20') for head in headings])[0][0]
