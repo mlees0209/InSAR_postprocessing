@@ -309,18 +309,28 @@ def import_well_seasonaltimeseries(filename):
 
 #%% 2. Functions which extract subsets of InSAR data.
 
-def extract_from_polygon(Polylon,Polylat,Data):
-    '''Takes a Pandas Dataframe Data, and a polygon defined by it's (ordered) lon and lat coordinates, and returns a Pandas Datafame corresponding to data only within that polygon.'''
+def extract_from_polygon(Polylon,Polylat,Data,xarray=False):
+    '''Takes a Pandas Dataframe Data, and a polygon defined by it's (ordered) lon and lat coordinates, and returns a Pandas Datafame corresponding to data only within that polygon. Handles xarrays with variable "z" if xarray=True. '''
     
     print('Extracting from polygon.')
-    print('\tStarting with %i pixels.' % len(Data))
+    if xarray:
+        print('\tStarting with %i non-nan pixels.' % np.sum(~np.isnan(Data.values)))
+    else:
+        print('\tStarting with %i pixels.' % len(Data))
     lat = np.array(Data['Latitude'])
     lon = np.array(Data['Longitude'])
         
     inbox = inpolygon(np.asarray(lon),np.asarray(lat),np.asarray(Polylon),np.asarray(Polylat))
-    Datafilt = Data[inbox]
-    print('\tExtraction completed. New dataset has %i pixels.' % len(Datafilt))
+    if xarray:
+       Datafilt = Data.where(inbox)
+    else:
+        Datafilt = Data[inbox]
+    if xarray:
+        print('\tExtraction cmpleted. New dataset has %i pixels.' % np.sum(~np.isnan(Datafilt.values)))
+    else:
+        print('\tExtraction completed. New dataset has %i pixels.' % len(Datafilt))
     return Datafilt
+
 
 def extract_series_from_latlon(lat,lon,Data,startdate=False,enddate=False,factor=1):
     '''Returns the time series for a given latitude and longitude pair. First finds the nearest pixel to your lat/lon, then extracts the series. Optionally scale the data by a factor (eg to go from LOS to vertical, etc).
