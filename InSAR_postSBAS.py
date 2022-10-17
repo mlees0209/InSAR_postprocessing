@@ -29,7 +29,7 @@ from fastkml import kml
 from matplotlib import path
 import os as os
 import os.path as ospath
-import pygmt
+#import pygmt
 from scipy.optimize import leastsq
 #import cartopy.io.img_tiles as cimgt
 #import cartopy.crs as ccrs
@@ -61,6 +61,10 @@ def import_InSAR_csv(filename,sep=','):
     if 'latitude' in csvData.columns:
         print('\tRenaming columns from latitude/longitude to Latitude/Longitude.')
         csvData.rename(columns={'longitude':'Longitude', 'latitude':'Latitude'},inplace=True)
+
+    if 'LAT' in csvData.columns:
+        print('\tRenaming columns from latitude/longitude to Latitude/Longitude.')
+        csvData.rename(columns={'LON':'Longitude', 'LAT':'Latitude'},inplace=True)
     
     print('\tChecking if any of the date columns start with the letter D and removing that character.')
     A = [tit for tit in csvData.columns if tit.startswith('D20')]
